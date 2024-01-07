@@ -1,20 +1,24 @@
+// ! libraries ............
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const registeringRoutes = require("./registeration/routes/registeringRoutes");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-// const fs = require("fs");
-// const path = require("path");
+const path = require("path");
+require("dotenv").config();
+
+// ! routers and imports......
+const registeringRoutes = require("./registeration/routes/registeringRoutes");
 const accountSettingsRouter = require("./registeration/routes/accountSettingRoutes");
 const postRouter = require("./post/routes/postRoutes");
 const profileRouter = require("./profile/routes/profileRoutes");
+const notificationRouter = require("./notifications/routes/notificationsRoutes");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-require("dotenv").config();
+
 app.use(
   cors({
     origin: [
@@ -34,6 +38,22 @@ app.use("/account/setting", accountSettingsRouter);
 app.use("/account/profile", profileRouter);
 
 app.use("/posts", postRouter);
+app.use("/account/notification", notificationRouter);
+
+//! Allowing access for images only those folders ...FD
+app.use(
+  "/uploads/defaults",
+  express.static(path.join(__dirname, "uploads", "defaults"))
+);
+app.use(
+  "/uploads/thumbnails",
+  express.static(path.join(__dirname, "uploads", "thumbnails"))
+);
+
+app.use(
+  "/uploads/original",
+  express.static(path.join(__dirname, "uploads", "original"))
+);
 
 mongoose
   .connect(process.env.DB_URL, {

@@ -34,6 +34,12 @@ const UserSchema = new mongoose.Schema({
     enum: ["Public", "Privet"],
     default: "Public",
   },
+
+  profile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Profile",
+  },
+
   password: {
     type: String,
     required: true,

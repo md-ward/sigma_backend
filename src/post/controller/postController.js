@@ -1,4 +1,8 @@
+const {
+  createNotification,
+} = require("../../notifications/controllers/notificationController");
 const Profile = require("../../profile/models/profileModel");
+const User = require("../../registeration/models/registeringModel");
 const Post = require("../model/postModel");
 
 //!  get user posts
@@ -16,6 +20,7 @@ async function getPosts(req, res) {
 // Add a new post
 async function addPost(req, res) {
   const user = req.userId;
+  const userName = User.findById(user);
   const content = req.body.content;
   try {
     const post = new Post({
@@ -24,6 +29,8 @@ async function addPost(req, res) {
     });
 
     await post.save();
+
+    await createNotification(user, `your friend ${user}`);
 
     res.status(201).send({ message: "Post added successfully", post });
   } catch (error) {
@@ -72,6 +79,8 @@ async function deletePost(req, res) {
     res.status(500).send({ errorMessage: "Error deleting post" });
   }
 }
+
+// todo: issue in finding posts ,replace following profile ids by user ids .... or find anothe way 
 async function getVariousPosts(req, res) {
   const userId = req.userId;
   const page = parseInt(req.query.page) || 1; // Current page number
@@ -80,18 +89,22 @@ async function getVariousPosts(req, res) {
   try {
     // Retrieve user's followers and following
     let user = await Profile.findOne({ user: userId });
-    let followers = user.followers || [];
+    let followers = ["659a81e6dcfe39e44410cfe5"];
     let following = user.following || [];
-
+    console.log({ user, followers, following });
     // Combine followers and following arrays
     const connections = [...followers, ...following, userId];
 
-    const count = await Post.countDocuments({ user: { $in: connections } }); // Total number of posts for connections
+    const count = await Post.countDocuments({
+      _id: { $in: connections },
+    }); // Total number of posts for connections with a public accountStatus
 
     const totalPages = Math.ceil(count / limit); // Total number of pages
 
-    const posts = await Post.find({ user: { $in: connections } })
-      .populate("user", "first_name last_name ")
+    const posts = await Post.find({
+      user: { $in: connections },
+    })
+      .populate("user", "first_name last_name profile")
       .skip((page - 1) * limit) // Skip posts based on the current page and limit
       .limit(limit) // Limit the number of posts per page
       .sort({ createdAt: -1 }); // Sort posts by createdAt field in descending order

@@ -14,12 +14,12 @@ const ProfileSchema = new Schema(
 
     profileImage: {
       type: Schema.Types.ObjectId,
-      ref: "Media",
+      ref: "Images",
     },
 
     coverImage: {
       type: Schema.Types.ObjectId,
-      ref: "Media",
+      ref: "Images",
     },
 
     bio: {
@@ -36,6 +36,13 @@ const ProfileSchema = new Schema(
     //   type: String,
     //   required: false,
     // },
+
+    pendingFollowRequists: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Profile",
+      },
+    ],
 
     followers: [
       {

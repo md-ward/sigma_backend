@@ -1,7 +1,7 @@
 const multer = require("multer");
 const sharp = require("sharp");
 const path = require("path");
-const ImageSchema = require("../models/assetsUploadModel");
+const Images = require("../model/mediaModel");
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -49,7 +49,7 @@ async function uploadImage(req, res) {
       );
 
       // console.log(originalUrl)
-      const Image_obj = new ImageSchema({
+      const Image_obj = new Images({
         image_alt: imageAlt,
         originalUrl: originalUrl.href,
         thumbnailUrl: thumbnailUrl.href,

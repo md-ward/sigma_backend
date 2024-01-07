@@ -1,8 +1,16 @@
+const {
+  createNotification,
+} = require("../../notifications/controllers/notificationController");
+const Notification = require("../../notifications/model/notificationModel");
 const Profile = require("../models/profileModel");
+
 async function getProfileDetails(req, res) {
-  const userId = req.userId;
+  const profileId = req.params.profileId;
   try {
-    const profile = await Profile.findOne({ user: userId });
+    const profile = await Profile.findById(profileId).populate(
+      "profileImage",
+      "originalUrl"
+    );
 
     if (!profile) {
       return res.status(404).send({ message: "User not found.. !" });
@@ -89,7 +97,43 @@ async function updateProfile(req, res) {
   }
 }
 
+async function sendFollowRequest(req, res) {
+  try {
+    const senderId = req.userId;
+
+    const receiverProfileId = req.body.profileId;
+
+    const senderProfile = await Profile.findOne({ user: senderId });
+
+    const receiverProfile = await Profile.findById(receiverProfileId);
+    if (receiverProfile) {
+      receiverProfile.pendingFollowRequists.push(senderProfile._id);
+      await receiverProfile.save();
+
+      const senderName = await senderProfile.populate(
+        "user",
+        "first_name last_name"
+      );
+
+      await createNotification(
+        receiverProfile.user,
+        Notification.NotificationStatus.follow,
+        senderName.user.first_name + " " + senderName.user.last_name,
+        senderProfile._id
+      );
+
+      res.status(200).send({ message: "Follow request sent successfully" });
+    } else {
+      return res.status(404).send({ errorMessage: "Profile not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ errorMessage: "Error sending follow request" });
+  }
+}
+
 module.exports = {
+  sendFollowRequest,
   completeProfile,
   updateProfile,
   getProfileDetails,

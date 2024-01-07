@@ -2,7 +2,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/registeringModel");
 const Profile = require("../../profile/models/profileModel");
-
+const Images = require("../../media/model/mediaModel");
+const path = require("path");
 //! generate initial username ...........
 
 function generateUsername(firstName, lastName) {
@@ -19,7 +20,6 @@ function generateUsername(firstName, lastName) {
   return username;
 }
 
-// !create new account and init user profile ............
 async function createUser(req, res) {
   let formData = req.body;
   console.log(req.body);
@@ -32,9 +32,8 @@ async function createUser(req, res) {
     const hashedPassword = await bcrypt.hash(formData.password, salt);
     formData.password = hashedPassword;
     formData.dateOfBirth = new Date(formData.dateOfBirth);
-    const user = new User(formData);
+    let user = new User(formData);
     await user.save();
-    var x = String();
 
     // Generate the username
     const generatedUsername = generateUsername(
@@ -46,21 +45,45 @@ async function createUser(req, res) {
       expiresIn: "30d",
     });
 
-    const profile = new Profile({
+    // Set the initial profile image based on the user's gender
+    let imageFileName = "";
+    if (user.gender === "male") {
+      imageFileName = "male1.png";
+    } else {
+      imageFileName = "female1.png";
+    }
+
+    const imagePath = path.join("../uploads/defaults", imageFileName);
+
+    const originalUrl = new URL(
+      imagePath,
+      `${req.protocol}://${req.get("host")}`
+    );
+
+    const initProfileImage = new Images({
       user: user._id,
-      user_name: generatedUsername,
-      followers: [],
-      following: [],
+      originalUrl: originalUrl,
     });
 
-    await profile.save();
+    // Wait for both saving the initial profile image and saving the profile
+    const [_, profile] = await Promise.all([
+      initProfileImage.save(),
+      new Profile({
+        user: user._id,
+        user_name: generatedUsername,
+        profileImage: initProfileImage._id,
+        followers: [],
+        following: [],
+      }).save(),
+    ]);
+    user.profile = profile._id;
+    await user.save();
     res.status(201).send(token);
   } catch (error) {
     console.error(error);
     res.status(500).send({ errorMessage: "Error registering user" });
   }
 }
-
 async function login(req, res) {
   const formData = req.body;
   try {
