@@ -14,11 +14,12 @@ const accountSettingsRouter = require("./registeration/routes/accountSettingRout
 const postRouter = require("./post/routes/postRoutes");
 const profileRouter = require("./profile/routes/profileRoutes");
 const notificationRouter = require("./notifications/routes/notificationsRoutes");
+const compression = require("compression");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-
+app.use(compression());
 app.use(
   cors({
     origin: [
@@ -30,7 +31,9 @@ app.use(
     credentials: true,
   })
 );
+
 // ! user Registeration.....
+
 app.use("/register", registeringRoutes);
 // ! account settings.......... [change phone num , change account status  ]
 app.use("/account/setting", accountSettingsRouter);

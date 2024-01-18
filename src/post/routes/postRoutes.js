@@ -5,14 +5,21 @@ const {
   addPost,
   updatePost,
   deletePost,
-  getPosts,
+
   getVariousPosts,
+  getSinglePost,
+  getPersonalProfilePosts,
 } = require("../controller/postController");
+const {
+  handleUploadedImages,
+} = require("../../media/controller/userImagesController");
 
 const postRouter = Router();
+
 postRouter.get("/", userAuthCheckMiddleware, getVariousPosts);
-postRouter.get("/user", userAuthCheckMiddleware, getPosts);
-postRouter.post("/", userAuthCheckMiddleware, addPost);
+postRouter.get("/personal", userAuthCheckMiddleware, getPersonalProfilePosts);
+postRouter.get("/:postId", userAuthCheckMiddleware, getSinglePost);
+postRouter.post("/", handleUploadedImages, userAuthCheckMiddleware, addPost);
 postRouter.put("/:postId", userAuthCheckMiddleware, updatePost);
 postRouter.delete("/:postId", userAuthCheckMiddleware, deletePost);
 

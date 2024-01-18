@@ -2,16 +2,16 @@ const { Router } = require("express");
 
 const {
   getNotifications,
-  respondToFollowRequestNotification,
+  respondToFriendRequestNotification,
 } = require("../controllers/notificationController");
 const userAuthCheckMiddleware = require("../../global/userAuthCeckMiddlewear");
 
 const notificationRouter = Router();
 notificationRouter.get("/", userAuthCheckMiddleware, getNotifications);
 notificationRouter.post(
-  "/followResponse",
+  "/friendResponse",
   userAuthCheckMiddleware,
-  respondToFollowRequestNotification
+  respondToFriendRequestNotification
 );
 
 module.exports = notificationRouter;

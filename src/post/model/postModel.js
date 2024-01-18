@@ -20,6 +20,12 @@ const PostSchema = new Schema(
       },
     ],
 
+    attachedImages: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Images",
+      },
+    ],
     comments: [
       {
         user: {
@@ -36,16 +42,6 @@ const PostSchema = new Schema(
         },
       },
     ],
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   { timestamps: true }
 );

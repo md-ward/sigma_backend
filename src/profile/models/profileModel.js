@@ -32,26 +32,14 @@ const ProfileSchema = new Schema(
       required: false,
     },
 
-    // location: {
-    //   type: String,
-    //   required: false,
-    // },
-
-    pendingFollowRequists: [
+    pendingFrindshipRequists: [
       {
         type: Schema.Types.ObjectId,
         ref: "Profile",
       },
     ],
 
-    followers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-
-    following: [
+    friends: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",

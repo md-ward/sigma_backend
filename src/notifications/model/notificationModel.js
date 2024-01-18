@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const NotificationStatus = {
-  follow: "Follow Requist",
+  friend: "Friend Request",
   newPost: "New Post",
 };
 
@@ -14,7 +14,7 @@ const NotificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Follow Requist", "New Post"],
+      enum: ["Friend Request", "New Post"],
       required: false,
     },
     senderProfileId: {
@@ -23,6 +23,11 @@ const NotificationSchema = new mongoose.Schema(
       required: false,
     },
 
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      required: false,
+    },
     message: {
       type: String,
       required: true,

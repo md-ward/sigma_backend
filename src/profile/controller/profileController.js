@@ -1,23 +1,70 @@
 const {
   createNotification,
 } = require("../../notifications/controllers/notificationController");
-const Notification = require("../../notifications/model/notificationModel");
+const {
+  NotificationStatus,
+} = require("../../notifications/model/notificationModel");
 const Profile = require("../models/profileModel");
 
-async function getProfileDetails(req, res) {
-  const profileId = req.params.profileId;
+async function getProfiles(req, res) {
+  const userId = req.userId;
   try {
-    const profile = await Profile.findById(profileId).populate(
-      "profileImage",
-      "originalUrl"
-    );
+    const userProfile = await Profile.findOne({ user: userId });
+
+    let userFriendsId = userProfile.friends;
+    userFriendsId = [...userFriendsId, userProfile._id];
+    // console.log(userFriendsId);
+    const profiles = await Profile.find({ _id: { $nin: userFriendsId } })
+      .select("profileImage user ")
+      .populate("profileImage", "originalUrl -_id")
+      .populate("user", "first_name last_name -_id")
+
+      .sort({ createdAt: -1 });
+    // console.log(profiles);
+    res.status(200).send({ profiles });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ errorMessage: error.message });
+  }
+}
+
+async function getPersonalProfileDetails(req, res) {
+  const userId = req.userId;
+  try {
+    const profile = await Profile.findOne(
+      { user: userId },
+      "-createdAt -updatedAt -__v",
+      {
+        populate: [
+          { path: "profileImage", select: "originalUrl" },
+          { path: "coverImage", select: "originalUrl" },
+        ],
+      }
+    )
+      // .populate("profileImage", "originalUrl")
+      .populate("user", "-password -_id -__v -createdAt -token -profile")
+      .populate({
+        path: "friends",
+        model: "Profile",
+        select: "user profileImage",
+        populate: [
+          {
+            path: "user",
+            select: "first_name last_name -_id",
+          },
+          {
+            path: "profileImage",
+            select: "originalUrl",
+          },
+        ],
+      });
 
     if (!profile) {
       return res.status(404).send({ message: "User not found.. !" });
     }
-
     res.status(200).send(profile);
   } catch (error) {
+    console.log(error.message);
     res.status(500).send(error);
   }
 }
@@ -97,44 +144,28 @@ async function updateProfile(req, res) {
   }
 }
 
-async function sendFollowRequest(req, res) {
+async function sendFriendRequest(req, res) {
   try {
     const senderId = req.userId;
 
     const receiverProfileId = req.body.profileId;
 
-    const senderProfile = await Profile.findOne({ user: senderId });
-
-    const receiverProfile = await Profile.findById(receiverProfileId);
-    if (receiverProfile) {
-      receiverProfile.pendingFollowRequists.push(senderProfile._id);
-      await receiverProfile.save();
-
-      const senderName = await senderProfile.populate(
-        "user",
-        "first_name last_name"
-      );
-
-      await createNotification(
-        receiverProfile.user,
-        Notification.NotificationStatus.follow,
-        senderName.user.first_name + " " + senderName.user.last_name,
-        senderProfile._id
-      );
-
-      res.status(200).send({ message: "Follow request sent successfully" });
-    } else {
-      return res.status(404).send({ errorMessage: "Profile not found" });
-    }
+    await createNotification(
+      senderId,
+      receiverProfileId,
+      NotificationStatus.friend
+    );
+    res.status(200).send({ message: "Friend request sent successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).send({ errorMessage: "Error sending follow request" });
+    // console.error(error);
+    res.status(500).send({ errorMessage: error.message });
   }
 }
 
 module.exports = {
-  sendFollowRequest,
+  getProfiles,
+  getPersonalProfileDetails,
+  sendFriendRequest,
   completeProfile,
   updateProfile,
-  getProfileDetails,
 };

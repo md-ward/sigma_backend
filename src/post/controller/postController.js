@@ -1,15 +1,30 @@
 const {
   createNotification,
 } = require("../../notifications/controllers/notificationController");
+const {
+  NotificationStatus,
+} = require("../../notifications/model/notificationModel");
 const Profile = require("../../profile/models/profileModel");
 const User = require("../../registeration/models/registeringModel");
 const Post = require("../model/postModel");
 
 //!  get user posts
-async function getPosts(req, res) {
+async function getPersonalProfilePosts(req, res) {
   const user = req.userId;
   try {
-    const posts = await Post.find({ user });
+    const posts = await Post.find({ user })      .populate({
+      path: "user",
+      select: "first_name last_name  profile -_id",
+      populate: {
+        path: "profile",
+        select: "profileImage user_name -_id",
+        populate: {
+          path: "profileImage",
+          select: "thumbnailUrl originalUrl -_id",
+        },
+      },
+    })
+    .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt")
 
     res.status(201).send({ posts });
   } catch (error) {
@@ -17,20 +32,55 @@ async function getPosts(req, res) {
     res.status(500).send({ errorMessage: "Error adding post" });
   }
 }
-// Add a new post
+//!  get single post details...
+async function getSinglePost(req, res) {
+  const user = req.userId;
+  const postId = req.params.postId;
+  console.log("post", postId);
+  try {
+    const post = await Post.findById(postId)
+      .populate({
+        path: "user",
+        select: "first_name last_name",
+        populate: {
+          path: "profile",
+          select: "profileImage user_name",
+          populate: {
+            path: "profileImage",
+            select: "originalUrl ",
+          },
+        },
+      })
+      .populate("attachedImages", "originalUrl -_id");
+    res.status(201).send({ post });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ errorMessage: "Error post data ..." });
+  }
+}
+
 async function addPost(req, res) {
   const user = req.userId;
-  const userName = User.findById(user);
   const content = req.body.content;
+  const attachedImages = req.imageIds;
+
   try {
     const post = new Post({
       user,
       content,
+      attachedImages,
     });
 
     await post.save();
 
-    await createNotification(user, `your friend ${user}`);
+    const userProfile = await Profile.findOne({ user });
+    console.log({ userProfile });
+
+    const createNotifications = userProfile.friends.map(async (friend) => {
+      await createNotification(user, friend, "New Post", post._id);
+    });
+
+    await Promise.all(createNotifications);
 
     res.status(201).send({ message: "Post added successfully", post });
   } catch (error) {
@@ -38,7 +88,6 @@ async function addPost(req, res) {
     res.status(500).send({ errorMessage: "Error adding post" });
   }
 }
-
 // Update an existing post
 async function updatePost(req, res) {
   const postId = req.params.postId;
@@ -80,21 +129,23 @@ async function deletePost(req, res) {
   }
 }
 
-// todo: issue in finding posts ,replace following profile ids by user ids .... or find anothe way 
+// todo: issue in finding posts ,replace following profile ids by user ids .... or find anothe way
 async function getVariousPosts(req, res) {
   const userId = req.userId;
   const page = parseInt(req.query.page) || 1; // Current page number
   const limit = parseInt(req.query.limit) || 10; // Number of posts per page
 
   try {
-    // Retrieve user's followers and following
-    let user = await Profile.findOne({ user: userId });
-    let followers = ["659a81e6dcfe39e44410cfe5"];
-    let following = user.following || [];
-    console.log({ user, followers, following });
-    // Combine followers and following arrays
-    const connections = [...followers, ...following, userId];
-
+    // Retrieve user's friends
+    let user = await Profile.findOne({ user: userId }).populate({
+      path: "friends",
+      model: "Profile",
+      select: "user -_id",
+    });
+    let friendsUsersId = user.friends.map((friend) => friend.user.toString());
+    // Combine friends  arrays
+    const connections = [...friendsUsersId, userId];
+    // console.log(friendsUsersId);
     const count = await Post.countDocuments({
       _id: { $in: connections },
     }); // Total number of posts for connections with a public accountStatus
@@ -104,7 +155,19 @@ async function getVariousPosts(req, res) {
     const posts = await Post.find({
       user: { $in: connections },
     })
-      .populate("user", "first_name last_name profile")
+      .populate({
+        path: "user",
+        select: "first_name last_name  profile -_id",
+        populate: {
+          path: "profile",
+          select: "profileImage user_name -_id",
+          populate: {
+            path: "profileImage",
+            select: "thumbnailUrl originalUrl -_id",
+          },
+        },
+      })
+      .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt")
       .skip((page - 1) * limit) // Skip posts based on the current page and limit
       .limit(limit) // Limit the number of posts per page
       .sort({ createdAt: -1 }); // Sort posts by createdAt field in descending order
@@ -115,4 +178,11 @@ async function getVariousPosts(req, res) {
     res.status(500).send({ errorMessage: "Error retrieving posts" });
   }
 }
-module.exports = { addPost, getPosts, updatePost, deletePost, getVariousPosts };
+module.exports = {
+  addPost,
+  getPersonalProfilePosts,
+  getSinglePost,
+  updatePost,
+  deletePost,
+  getVariousPosts,
+};
