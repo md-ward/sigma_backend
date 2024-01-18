@@ -36,7 +36,7 @@ async function getPersonalProfilePosts(req, res) {
 async function getSinglePost(req, res) {
   const user = req.userId;
   const postId = req.params.postId;
-  console.log("post", postId);
+  // console.log("post", postId);
   try {
     const post = await Post.findById(postId)
       .populate({

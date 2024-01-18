@@ -27,7 +27,7 @@ app.use(
       "http://192.168.1.7:5173",
       "http://localhost:4173",
     ],
-    methods: ["POST", "PUT", "GET", "DELETE", "OPTIONS", "HEAD"],
+    methods: ["PUT", "POST", "GET", "DELETE", "OPTIONS", "HEAD"],
     credentials: true,
   })
 );

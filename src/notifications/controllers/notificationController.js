@@ -1,9 +1,10 @@
 const Profile = require("../../profile/models/profileModel");
-const User = require("../../registeration/models/registeringModel");
 const {
   Notification,
   NotificationStatus,
 } = require("../model/notificationModel");
+
+// ! create notification........type : New post / new friend requist ..
 async function createNotification(
   senderUserId,
   receiverProfileId,
@@ -11,7 +12,7 @@ async function createNotification(
   postId
 ) {
   try {
-    console.log(type);
+    // console.log(type);
 
     const senderProfile = await Profile.findOne({
       user: senderUserId,
@@ -76,12 +77,12 @@ async function createNotification(
     throw error;
   }
 }
-// Get all notifications for a user
+
+//! Get all notifications for a user
 async function getNotifications(req, res) {
   try {
     const userId = req.userId;
 
-    console.log(userId);
     // Find all notifications for the user
     const notifications = await Notification.find(
       {
@@ -107,22 +108,31 @@ async function getNotifications(req, res) {
   }
 }
 
-// Mark a notification as read
+//! Mark a notification as read
 async function markNotificationAsRead(req, res) {
   try {
-    const notificationId = req.params.notificationId;
+    const notificationId = req.body.notificationId;
 
-    // Find the notification by ID
-    const notification = await Notification.findById(notificationId);
+    const notification = await Notification.findByIdAndUpdate(
+      notificationId,
+      {
+        isRead: true,
+      },
+      { new: true }
+    ).populate({
+      path: "senderProfileId",
+      select: "profileImage pendingFrindshipRequists",
+      populate: {
+        path: "profileImage",
+        model: "Images",
+        select: "originalUrl -_id",
+      },
+    });
     if (!notification) {
       return res.status(404).json({ errorMessage: "Notification not found" });
     }
 
-    // Update the notification as read
-    notification.isRead = true;
-    await notification.save();
-
-    res.status(200).json({ message: "Notification marked as read" });
+    res.status(200).json(notification);
   } catch (error) {
     console.error(error);
     res
@@ -144,9 +154,7 @@ async function respondToFriendRequestNotification(req, res) {
     console.log({ notificationId, friendResponse, receiverProfile });
 
     if (notification.toUser != userId) {
-      return res
-        .status(404)
-        .json({ errorMessage: "unauthorized user " });
+      return res.status(404).json({ errorMessage: "unauthorized user " });
     }
     if (!notification) {
       return res.status(404).json({ errorMessage: "Notification not found" });
