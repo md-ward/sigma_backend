@@ -15,6 +15,7 @@ const postRouter = require("./post/routes/postRoutes");
 const profileRouter = require("./profile/routes/profileRoutes");
 const notificationRouter = require("./notifications/routes/notificationsRoutes");
 const compression = require("compression");
+const commentsRouter = require("./comments/routes/commentsRouts");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -41,7 +42,10 @@ app.use("/account/setting", accountSettingsRouter);
 app.use("/account/profile", profileRouter);
 
 app.use("/posts", postRouter);
+
 app.use("/account/notification", notificationRouter);
+// ! comments ..........
+app.use("/comments", commentsRouter);
 
 //! Allowing access for images only those folders ...FD
 app.use(

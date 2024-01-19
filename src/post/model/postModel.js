@@ -10,7 +10,7 @@ const PostSchema = new Schema(
 
     content: {
       type: String,
-      required: true,
+      required: false,
     },
 
     likes: [
@@ -26,22 +26,7 @@ const PostSchema = new Schema(
         ref: "Images",
       },
     ],
-    comments: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-        content: {
-          type: String,
-          required: true,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    comments: [{ type: Schema.Types.ObjectId, ref: "Comments" }],
   },
   { timestamps: true }
 );

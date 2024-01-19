@@ -1,60 +1,41 @@
-const CommentsModel = require("../models/commentsModel");
-const User = require("../../registeration/models/registeringModel");
+const Post = require("../../post/model/postModel");
+const Comments = require("../models/commentsModel");
 
-exports.addComment = async (req, res) => {
-  const userId = res.locals.userId;
-  const productId = req.params.productId;
-  const { comment } = req.body;
+async function addComment(req, res) {
+  const { postId, commentText } = req.body;
+  const userId = req.userId;
 
-  console.log({ productId, comment });
   try {
-    const newComment = new CommentsModel({
-      customer: userId,
-      product: productId,
-      comment: comment,
+    const comment = new Comments({
+      user: userId,
+      post: postId,
+      comment: commentText,
     });
+    await comment.save();
 
-    await newComment.save();
-    let name = await User.findById(userId, "name -_id");
+    const post = await Post.findByIdAndUpdate(
+      postId,
+      { $push: { comments: comment._id } },
+      { new: true }
+    );
 
-    res.status(201).json({
-      comments: {
-        customer: name.name,
-        productId,
-        comment,
-      },
-    });
+    res.status(201).send({ post, comment });
   } catch (error) {
-    console.error("Error adding comment:", error);
-    res.status(500).json({ message: "Failed to add comment" });
+    console.log(error);
+    res.status(500).send({ error: error.message + "Failed to add comment" });
   }
-};
-exports.getProductComments = async (req, res) => {
-  const productId = req.params.productId;
-  const limit = parseInt(req.query.limit) || 5;
-  console.log(limit);
+}
 
-  const totalComments = await CommentsModel.countDocuments({
-    product: productId,
-  });
-
-  try { 
-    let comments = await CommentsModel.find({ product: productId }, "-__v")
-      .populate("customer", "name -_id")
-      .limit(limit)
-      .lean();
-
-    comments = comments.map((comment) => {
-      return {
-        ...comment,
-        customer: comment.customer ? comment.customer.name : null,
-      };
-    });
-    // console.log({ comments, totalComments });
-
-    res.status(200).json({ comments, totalComments });
+async function getPostComments(req, res) {
+  const postId = req.params.postId;
+  try {
+    const limit = 5;
+    const comments = await Comments.find({ post: postId });
+    res.status(200).send(comments);
   } catch (error) {
-    console.error("Error retrieving comments:", error);
-    res.status(500).json({ message: "Failed to retrieve comments" });
+    console.log(error);
+    res.status(500).send({ errorMessage: error.message });
   }
-};
+}
+
+module.exports = { addComment, getPostComments };

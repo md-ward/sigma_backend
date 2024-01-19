@@ -1,29 +1,25 @@
 const mongoose = require("mongoose");
 
-const CommentsSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const CommentsSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    post: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      required: true,
+    },
+    comment: {
+      type: String,
+      required: true,
+    },
   },
-  post: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Post",
-    required: true,
-  },
-  comment: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-  },
-});
+  { timestamps: true }
+);
 
-const CommentsModel = mongoose.model("Comments", CommentsSchema);
+const Comments = mongoose.model("Comments", CommentsSchema);
 
-module.exports = CommentsModel;
+module.exports = Comments;

@@ -2,10 +2,10 @@ const { Router } = require("express");
 const userAuthCheckMiddleware = require("../../global/userAuthCeckMiddlewear");
 const {
   addComment,
-  getProductComments,
+  getPostComments,
 } = require("../controllers/commentsController");
+const commentsRouter = Router();
+commentsRouter.post("/", userAuthCheckMiddleware, addComment);
+commentsRouter.get("/:postId", userAuthCheckMiddleware, getPostComments);
 
-const commenstRoutes = Router();
-commenstRoutes.post("/:productId", userAuthCheckMiddleware, addComment);
-commenstRoutes.get("/:productId",  getProductComments);
-module.exports = commenstRoutes;
+module.exports = commentsRouter;
