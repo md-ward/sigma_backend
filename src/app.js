@@ -17,6 +17,7 @@ const profileRouter = require("./profile/routes/profileRoutes");
 const notificationRouter = require("./notifications/routes/notificationsRoutes");
 const commentsRouter = require("./comments/routes/commentsRouts");
 const NotificationService = require("./webSockets/controllers/notificationController");
+const notificationServiceInstance = require("./webSockets/controllers/notificationController");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -70,8 +71,9 @@ mongoose
   .then(() => {
     console.log("Connected to the database");
     const server = http.createServer(app);
-    const notificationService = new NotificationService(server);
-    notificationService.startServer();
+    notificationServiceInstance.setServer(server);
+    notificationServiceInstance.startServer();
+
     const port = process.env.PORT || 3000;
     server.listen(port, "192.168.1.7", () => {
       console.log(`Server running on 192.168.1.7:${port}`);

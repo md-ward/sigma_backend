@@ -1,4 +1,6 @@
 const Profile = require("../../profile/models/profileModel");
+const notificationServiceInstance = require("../../webSockets/controllers/notificationController");
+const NotificationService = require("../../webSockets/controllers/notificationController");
 const {
   Notification,
   NotificationStatus,
@@ -12,8 +14,6 @@ async function createNotification(
   postId
 ) {
   try {
-    // console.log(type);
-
     const senderProfile = await Profile.findOne({
       user: senderUserId,
     }).populate("user", "first_name last_name -_id");
@@ -45,6 +45,7 @@ async function createNotification(
           message: `your friend ${senderName} added new post`,
           postId,
         }).then((notification) => notification.save());
+        notificationServiceInstance.io.emit("new", "added new post ");
         return;
 
       case "Friend Request":
@@ -67,6 +68,7 @@ async function createNotification(
           senderProfileId: senderProfile._id,
           message: `${senderName} sent you a friend request`,
         }).then((notification) => notification.save());
+
         return;
 
       default:

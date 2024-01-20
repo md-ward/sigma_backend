@@ -9,7 +9,7 @@ const userAuthCheckMiddleware = async (req, res, next) => {
         .status(401)
         .json({ message: "Authentication token not provided" });
     }
-// console.log(token);
+    // console.log(token);
     // Verify and decode the token
     const decodedToken = jwt.verify(token, process.env.USER_SECRET_KEY);
     const isUser = await User.findById(decodedToken.userId);
