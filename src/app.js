@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
+const http = require("http");
 
 // ! routers and imports......
 const registeringRoutes = require("./registeration/routes/registeringRoutes");
@@ -14,13 +15,12 @@ const accountSettingsRouter = require("./registeration/routes/accountSettingRout
 const postRouter = require("./post/routes/postRoutes");
 const profileRouter = require("./profile/routes/profileRoutes");
 const notificationRouter = require("./notifications/routes/notificationsRoutes");
-const compression = require("compression");
 const commentsRouter = require("./comments/routes/commentsRouts");
+const NotificationService = require("./webSockets/controllers/notificationController");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(compression());
 app.use(
   cors({
     origin: [
@@ -69,9 +69,11 @@ mongoose
   })
   .then(() => {
     console.log("Connected to the database");
-
+    const server = http.createServer(app);
+    const notificationService = new NotificationService(server);
+    notificationService.startServer();
     const port = process.env.PORT || 3000;
-    app.listen(port, "192.168.1.7", () => {
+    server.listen(port, "192.168.1.7", () => {
       console.log(`Server running on 192.168.1.7:${port}`);
     });
   })
