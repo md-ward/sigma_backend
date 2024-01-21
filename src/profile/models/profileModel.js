@@ -32,7 +32,7 @@ const ProfileSchema = new Schema(
       required: false,
     },
 
-    pendingFrindshipRequists: [
+    pendingFriendRequests: [
       {
         type: Schema.Types.ObjectId,
         ref: "Profile",

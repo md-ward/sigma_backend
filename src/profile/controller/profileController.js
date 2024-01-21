@@ -46,7 +46,7 @@ async function getPersonalProfileDetails(req, res) {
       .populate({
         path: "friends",
         model: "Profile",
-        select: "user profileImage",
+        select: "user profileImage coverImage",
         populate: [
           {
             path: "user",
@@ -54,6 +54,10 @@ async function getPersonalProfileDetails(req, res) {
           },
           {
             path: "profileImage",
+            select: "originalUrl",
+          },
+          {
+            path: "coverImage",
             select: "originalUrl",
           },
         ],

@@ -54,26 +54,55 @@ async function createUser(req, res) {
     }
 
     const imagePath = path.join("../uploads/defaults", imageFileName);
+    const coverImagePath = path.join(
+      "../uploads/defaults",
+      "default_cover.jpg"
+    );
 
     const originalUrl = new URL(
       imagePath,
       `${req.protocol}://${req.get("host")}`
     );
+    const coverUrl = new URL(
+      coverImagePath,
+      `${req.protocol}://${req.get("host")}`
+    );
+console.log(coverUrl);
+    let newUserDefaultProfileImage;
+    let newUserDefaultCoverImage;
 
-    const initProfileImage = new Images({
-      user: user._id,
-      originalUrl: originalUrl,
-    });
+    const isProfileImageInit = await Images.findOne({ originalUrl });
+    const isCoverImageInit = await Images.findOne({ originalUrl: coverUrl });
 
-    // Wait for both saving the initial profile image and saving the profile
-    const [_, profile] = await Promise.all([
-      initProfileImage.save(),
+    if (isProfileImageInit) {
+      newUserDefaultProfileImage = isProfileImageInit._id;
+    } else {
+      let initNewProfileImage = new Images({
+        user: user._id,
+        originalUrl: originalUrl,
+      });
+      await initNewProfileImage.save();
+      newUserDefaultProfileImage = initNewProfileImage._id;
+    }
+
+    if (isCoverImageInit) {
+      newUserDefaultCoverImage = isCoverImageInit._id;
+    } else {
+      let initNewCoverImage = new Images({
+        user: user._id,
+        originalUrl: coverUrl,
+      });
+      await initNewCoverImage.save();
+      newUserDefaultCoverImage = initNewCoverImage._id;
+    }
+
+    // Wait for saving the initial profile image and saving the profile
+    const [profile] = await Promise.all([
       new Profile({
         user: user._id,
         user_name: generatedUsername,
-        profileImage: initProfileImage._id,
-        followers: [],
-        following: [],
+        profileImage: newUserDefaultProfileImage,
+        coverImage: newUserDefaultCoverImage,
       }).save(),
     ]);
     user.profile = profile._id;

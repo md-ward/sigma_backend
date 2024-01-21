@@ -48,7 +48,7 @@ async function createNotification(
           notification.save();
           const populatedNotification = await notification.populate({
             path: "senderProfileId",
-            select: "profileImage pendingFrindshipRequists ",
+            select: "profileImage pendingFriendRequests ",
             populate: {
               path: "profileImage",
               model: "Images",
@@ -73,7 +73,7 @@ async function createNotification(
           throw new Error("Friend request already sent");
         }
 
-        receiverProfile.pendingFrindshipRequists.push(senderProfile._id);
+        receiverProfile.pendingFriendRequests.push(senderProfile._id);
         await receiverProfile.save();
 
         await Notification.create({
@@ -81,7 +81,25 @@ async function createNotification(
           type: type,
           senderProfileId: senderProfile._id,
           message: `${senderName} sent you a friend request`,
-        }).then((notification) => notification.save());
+        }).then(async (notification) => {
+          const [_, populatedNotification] = await Promise.all([
+            notification.save(),
+            notification.populate({
+              path: "senderProfileId",
+              select: "profileImage pendingFriendRequests ",
+              populate: {
+                path: "profileImage",
+                model: "Images",
+                select: "originalUrl -_id",
+              },
+            }),
+          ]);
+
+          notificationServiceInstance.sendNotification(
+            receiverProfile.user.toString(),
+            populatedNotification
+          );
+        });
 
         return;
 
@@ -108,7 +126,7 @@ async function getNotifications(req, res) {
     )
       .populate({
         path: "senderProfileId",
-        select: "profileImage pendingFrindshipRequists ",
+        select: "profileImage pendingFriendRequests ",
         populate: {
           path: "profileImage",
           model: "Images",
@@ -137,7 +155,7 @@ async function markNotificationAsRead(req, res) {
       { new: true }
     ).populate({
       path: "senderProfileId",
-      select: "profileImage pendingFrindshipRequists",
+      select: "profileImage pendingFriendRequests",
       populate: {
         path: "profileImage",
         model: "Images",
@@ -188,8 +206,8 @@ async function respondToFriendRequestNotification(req, res) {
       switch (friendResponse) {
         case "accept":
           // Remove the pending request from receiver's profile
-          receiverProfile.pendingFrindshipRequists =
-            receiverProfile.pendingFrindshipRequists.filter(
+          receiverProfile.pendingFriendRequests =
+            receiverProfile.pendingFriendRequests.filter(
               (id) => id.toString() !== senderProfileId.toString()
             );
 
@@ -207,8 +225,8 @@ async function respondToFriendRequestNotification(req, res) {
           break;
         case "decline":
           // Remove the pending request from receiver's profile
-          receiverProfile.pendingFrindshipRequists =
-            receiverProfile.pendingFrindshipRequists.filter(
+          receiverProfile.pendingFriendRequests =
+            receiverProfile.pendingFriendRequests.filter(
               (id) => id.toString() !== senderProfileId.toString()
             );
 
