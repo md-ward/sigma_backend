@@ -8,8 +8,9 @@ class NotificationService {
     this.server = null;
     this.connectedUsers = new Map();
   }
-  setServer(server) {
+  setServer(server, corsOptions) {
     this.server = server;
+    this.corsOptions = corsOptions;
   }
 
   authenticateUser = async (socket, next) => {
@@ -43,7 +44,7 @@ class NotificationService {
   sendNotification(userId, notification) {
     // Retrieve the socket object for the specified user ID
     const socket = this.connectedUsers.get(userId);
-
+    // console.log(this.connectedUsers.keys());
     if (socket) {
       // Emit the notification event to the specific user's socket
       socket.emit("notification", notification);
@@ -53,7 +54,10 @@ class NotificationService {
   }
 
   startServer() {
-    this.io = new Io.Server(this.server, { path: "/notifications" }); // Create a new Socket.IO server instance
+    this.io = new Io.Server(this.server, {
+      cors: this.corsOptions,
+      path: "/notifications",
+    }); // Create a new Socket.IO server instance
     this.io.use(this.authenticateUser);
     // Define event handlers for the socket server
     this.io.on("connection", (socket) => {

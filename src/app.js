@@ -16,23 +16,23 @@ const postRouter = require("./post/routes/postRoutes");
 const profileRouter = require("./profile/routes/profileRoutes");
 const notificationRouter = require("./notifications/routes/notificationsRoutes");
 const commentsRouter = require("./comments/routes/commentsRouts");
-const NotificationService = require("./webSockets/controllers/notificationController");
-const notificationServiceInstance = require("./webSockets/controllers/notificationController");
+const NotificationService = require("./webSockets/controllers/notificationWebSocketController");
+const notificationServiceInstance = require("./webSockets/controllers/notificationWebSocketController");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "http://192.168.1.7:5173",
-      "http://localhost:4173",
-    ],
-    methods: ["PUT", "POST", "GET", "DELETE", "OPTIONS", "HEAD"],
-    credentials: true,
-  })
-);
+
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://192.168.1.7:5173",
+    "http://localhost:4173",
+  ],
+  methods: ["PUT", "POST", "GET", "DELETE", "OPTIONS", "HEAD"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 // ! user Registeration.....
 
@@ -71,7 +71,7 @@ mongoose
   .then(() => {
     console.log("Connected to the database");
     const server = http.createServer(app);
-    notificationServiceInstance.setServer(server);
+    notificationServiceInstance.setServer(server, corsOptions);
     notificationServiceInstance.startServer();
 
     const port = process.env.PORT || 3000;

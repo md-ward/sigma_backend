@@ -1,6 +1,6 @@
 const Profile = require("../../profile/models/profileModel");
-const notificationServiceInstance = require("../../webSockets/controllers/notificationController");
-const NotificationService = require("../../webSockets/controllers/notificationController");
+const notificationServiceInstance = require("../../webSockets/controllers/notificationWebSocketController");
+const NotificationService = require("../../webSockets/controllers/notificationWebSocketController");
 const {
   Notification,
   NotificationStatus,
@@ -44,8 +44,22 @@ async function createNotification(
           senderProfileId: senderProfile._id,
           message: `your friend ${senderName} added new post`,
           postId,
-        }).then((notification) => notification.save());
-        notificationServiceInstance.io.emit("new", "added new post ");
+        }).then(async (notification) => {
+          notification.save();
+          const populatedNotification = await notification.populate({
+            path: "senderProfileId",
+            select: "profileImage pendingFrindshipRequists ",
+            populate: {
+              path: "profileImage",
+              model: "Images",
+              select: "originalUrl -_id",
+            },
+          });
+          notificationServiceInstance.sendNotification(
+            receiverProfile.user.toString(),
+            populatedNotification
+          );
+        });
         return;
 
       case "Friend Request":
@@ -153,7 +167,7 @@ async function respondToFriendRequestNotification(req, res) {
     const receiverProfile = await Profile.findOne({
       user: userId,
     });
-    console.log({ notificationId, friendResponse, receiverProfile });
+    // console.log({ notificationId, friendResponse, receiverProfile });
 
     if (notification.toUser != userId) {
       return res.status(404).json({ errorMessage: "unauthorized user " });
