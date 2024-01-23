@@ -15,12 +15,12 @@ async function addComment(req, res) {
 
     await Post.findByIdAndUpdate(
       postId,
-      { $push: { comments: comment._id } },
+      { $push: { comments: comment._id, $inc: { commentsCount: 1 } } },
       { new: true }
     );
     await comment.populate({
       path: "user",
-      select: "profile -_id ",
+      select: "first_name last_name  profile -_id ",
       populate: {
         path: "profile",
         select: "profileImage",
@@ -40,7 +40,7 @@ async function getPostComments(req, res) {
     const limit = 5;
     const comments = await Comments.find({ post: postId }, "-post").populate({
       path: "user",
-      select: "profile -_id ",
+      select: "first_name last_name   profile -_id ",
       populate: {
         path: "profile",
         select: "profileImage",

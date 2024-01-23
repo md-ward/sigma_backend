@@ -1,9 +1,8 @@
+const { NotificationStatus } = require("../../global/enums");
 const {
   createNotification,
 } = require("../../notifications/controllers/notificationController");
-const {
-  NotificationStatus,
-} = require("../../notifications/model/notificationModel");
+
 const Profile = require("../models/profileModel");
 
 async function getProfiles(req, res) {

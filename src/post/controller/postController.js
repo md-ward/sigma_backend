@@ -1,31 +1,31 @@
+const { NotificationStatus } = require("../../global/enums");
 const {
   createNotification,
 } = require("../../notifications/controllers/notificationController");
-const {
-  NotificationStatus,
-} = require("../../notifications/model/notificationModel");
 const Profile = require("../../profile/models/profileModel");
-const User = require("../../registeration/models/registeringModel");
+// const User = require("../../registeration/models/registeringModel");
+const PostServiceInstance = require("../../webSockets/controllers/postsWebSocketController");
 const Post = require("../model/postModel");
 
 //!  get user posts
 async function getPersonalProfilePosts(req, res) {
   const user = req.userId;
   try {
-    const posts = await Post.find({ user })      .populate({
-      path: "user",
-      select: "first_name last_name  profile -_id",
-      populate: {
-        path: "profile",
-        select: "profileImage user_name -_id",
+    const posts = await Post.find({ user })
+      .populate({
+        path: "user",
+        select: "first_name last_name  profile -_id",
         populate: {
-          path: "profileImage",
-          select: "thumbnailUrl originalUrl -_id",
+          path: "profile",
+          select: "profileImage user_name -_id",
+          populate: {
+            path: "profileImage",
+            select: "thumbnailUrl originalUrl -_id",
+          },
         },
-      },
-    })
-    .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt")
-
+      })
+      .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt");
+    console.log({ posts });
     res.status(201).send({ posts });
   } catch (error) {
     console.error(error);
@@ -36,7 +36,7 @@ async function getPersonalProfilePosts(req, res) {
 async function getSinglePost(req, res) {
   const user = req.userId;
   const postId = req.params.postId;
-  // console.log("post", postId);
+  console.log("post", postId);
   try {
     const post = await Post.findById(postId)
       .populate({
@@ -72,12 +72,35 @@ async function addPost(req, res) {
     });
 
     await post.save();
+    const newPost = await post.populate([
+      {
+        path: "user",
+        select: "first_name last_name  profile -_id",
+        populate: {
+          path: "profile",
+          select: "profileImage user_name -_id",
+          populate: {
+            path: "profileImage",
+            select: "thumbnailUrl originalUrl -_id",
+          },
+        },
+      },
+      {
+        path: "attachedImages",
+        select: "-_id -_createdAt -__v -uploadedAt",
+      },
+    ]);
 
-    const userProfile = await Profile.findOne({ user });
-    console.log({ userProfile });
+    const userProfile = await Profile.findOne({ user }).populate({
+      path: "friends",
+      model: "Profile",
+      select: "user",
+    });
+    // console.log({ userProfile, friends: userProfile.friends });
 
     const createNotifications = userProfile.friends.map(async (friend) => {
-      await createNotification(user, friend, "New Post", post._id);
+      createNotification(user, friend, NotificationStatus.newPost, post._id);
+      PostServiceInstance.sendNewpostUpdate(String(friend.user), newPost);
     });
 
     await Promise.all(createNotifications);

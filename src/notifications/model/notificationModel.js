@@ -1,10 +1,5 @@
 const mongoose = require("mongoose");
 
-const NotificationStatus = {
-  friend: "Friend Request",
-  newPost: "New Post",
-};
-
 const NotificationSchema = new mongoose.Schema(
   {
     toUser: {
@@ -42,4 +37,4 @@ const NotificationSchema = new mongoose.Schema(
 
 const Notification = mongoose.model("Notification", NotificationSchema);
 
-module.exports = { Notification, NotificationStatus };
+module.exports = { Notification };

@@ -1,10 +1,7 @@
+const { NotificationStatus } = require("../../global/enums");
 const Profile = require("../../profile/models/profileModel");
 const notificationServiceInstance = require("../../webSockets/controllers/notificationWebSocketController");
-const NotificationService = require("../../webSockets/controllers/notificationWebSocketController");
-const {
-  Notification,
-  NotificationStatus,
-} = require("../model/notificationModel");
+const { Notification } = require("../model/notificationModel");
 
 // ! create notification........type : New post / new friend requist ..
 async function createNotification(
@@ -135,10 +132,10 @@ async function getNotifications(req, res) {
       })
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ notifications });
+    res.status(200).send({ notifications });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ errorMessage: "Failed to retrieve notifications" });
+    res.status(500).send({ errorMessage: "Failed to retrieve notifications" });
   }
 }
 
@@ -163,15 +160,15 @@ async function markNotificationAsRead(req, res) {
       },
     });
     if (!notification) {
-      return res.status(404).json({ errorMessage: "Notification not found" });
+      return res.status(404).send({ errorMessage: "Notification not found" });
     }
 
-    res.status(200).json(notification);
+    res.status(200).send(notification);
   } catch (error) {
     console.error(error);
     res
       .status(500)
-      .json({ errorMessage: "Failed to mark notification as read" });
+      .send({ errorMessage: "Failed to mark notification as read" });
   }
 }
 
@@ -188,10 +185,10 @@ async function respondToFriendRequestNotification(req, res) {
     // console.log({ notificationId, friendResponse, receiverProfile });
 
     if (notification.toUser != userId) {
-      return res.status(404).json({ errorMessage: "unauthorized user " });
+      return res.status(404).send({ errorMessage: "unauthorized user " });
     }
     if (!notification) {
-      return res.status(404).json({ errorMessage: "Notification not found" });
+      return res.status(404).send({ errorMessage: "Notification not found" });
     }
 
     if (notification.isRead && notification.type == NotificationStatus.friend) {
@@ -217,10 +214,11 @@ async function respondToFriendRequestNotification(req, res) {
           senderProfile.friends.push(receiverProfile._id);
 
           notification.isRead = true;
-
-          await receiverProfile.save();
-          await senderProfile.save();
-          await notification.save();
+          await Promise.all([
+            receiverProfile.save(),
+            senderProfile.save(),
+            notification.save(),
+          ]);
 
           break;
         case "decline":
@@ -229,31 +227,55 @@ async function respondToFriendRequestNotification(req, res) {
             receiverProfile.pendingFriendRequests.filter(
               (id) => id.toString() !== senderProfileId.toString()
             );
+          senderProfile.pendingFriendRequests =
+            senderProfile.pendingFriendRequests.filter(
+              (id) => id.toString() !== receiverProfile._id.toString()
+            );
 
           notification.isRead = true;
 
-          await receiverProfile.save();
-          await notification.save();
+          await Promise.all([
+            receiverProfile.save(),
+            senderProfile.save(),
+            notification.save(),
+          ]);
+          // await receiverProfile.save();
+          // await notification.save();
 
           break;
         default:
           return res
             .status(400)
-            .json({ errorMessage: "Invalid friend response" });
+            .send({ errorMessage: "Invalid friend response" });
       }
     }
 
     return res
       .status(200)
-      .json({ message: "friend response processed successfully" });
+      .send({ message: "friend response processed successfully" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ errorMessage: "Something went wrong" });
+    return res.status(500).send({ errorMessage: "Something went wrong" });
   }
 }
+
+async function unReadNotificationsCount(req, res) {
+  try {
+    const userId = req.userId;
+    const notificationCount = await Notification.countDocuments({
+      toUser: userId,
+      isRead: false,
+    });
+    res.status(200).send({ count: notificationCount });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+}
+
 module.exports = {
   createNotification,
   getNotifications,
+  unReadNotificationsCount,
   markNotificationAsRead,
   respondToFriendRequestNotification,
 };

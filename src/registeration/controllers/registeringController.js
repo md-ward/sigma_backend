@@ -67,7 +67,7 @@ async function createUser(req, res) {
       coverImagePath,
       `${req.protocol}://${req.get("host")}`
     );
-console.log(coverUrl);
+    console.log(coverUrl);
     let newUserDefaultProfileImage;
     let newUserDefaultCoverImage;
 
@@ -106,6 +106,7 @@ console.log(coverUrl);
       }).save(),
     ]);
     user.profile = profile._id;
+    user.token = token;
     await user.save();
     res.status(201).send(token);
   } catch (error) {
