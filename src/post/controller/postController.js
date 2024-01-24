@@ -24,7 +24,8 @@ async function getPersonalProfilePosts(req, res) {
           },
         },
       })
-      .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt");
+      .populate("attachedImages", "-_id -_createdAt -__v -uploadedAt")
+      .sort({ createdAt: -1 });
     console.log({ posts });
     res.status(201).send({ posts });
   } catch (error) {
